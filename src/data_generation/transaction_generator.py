@@ -25,6 +25,8 @@ class Transaction:
     ip_address: str
     latitude: float
     longitude: float
+    is_fraud: bool = False
+    fraud_type: str | None = None
 
 
 class TransactionGenerator:
