@@ -105,6 +105,14 @@ class FraudGenerator:
                     )
                 )
 
+        if len({
+            transaction.timestamp
+            for transaction in injected_transactions
+            }) != len(injected_transactions):
+            raise ValueError(
+                "Injected investment scam timestamps must be unique"
+                )
+
         return injected_transactions
 
     def inject_money_mule_layering(self, transactions):
@@ -242,6 +250,14 @@ class FraudGenerator:
                     is_fraud=True,
                     fraud_type=MONEY_MULE_LAYERING
                     )
+                )
+
+        if len({
+            transaction.timestamp
+            for transaction in injected_transactions
+            }) != len(injected_transactions):
+            raise ValueError(
+                "Injected money-mule timestamps must be unique"
                 )
 
         return injected_transactions
