@@ -5,6 +5,7 @@ from faker import Faker
 import random
 
 from src.config.cities import UK_CITY_COORDINATES
+from src.data_generation import DEFAULT_REFERENCE_DATETIME
 
 
 @dataclass
@@ -30,10 +31,23 @@ class Transaction:
 
 
 class TransactionGenerator:
-    def __init__(self):
+    def __init__(
+        self,
+        reference_datetime=DEFAULT_REFERENCE_DATETIME
+        ):
+        if not isinstance(reference_datetime, datetime):
+            raise TypeError(
+                "reference_datetime must be a datetime"
+                )
+        if reference_datetime.tzinfo is not None:
+            raise ValueError(
+                "reference_datetime must not include a timezone"
+                )
+
         self.fake = Faker("en_GB")
         self.transaction_counter = 1
         self.device_ip_addresses = {}
+        self.reference_datetime = reference_datetime
 
     def generate_transaction(
         self,
@@ -108,7 +122,7 @@ class TransactionGenerator:
             2
             )
 
-        now = datetime.now()
+        now = self.reference_datetime
         earliest_date = max(
             customer.customer_since,
             account.opened_date,

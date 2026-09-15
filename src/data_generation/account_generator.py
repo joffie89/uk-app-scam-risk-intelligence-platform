@@ -1,8 +1,11 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
+from dateutil.relativedelta import relativedelta
 from faker import Faker
 import random
+
+from src.data_generation import DEFAULT_REFERENCE_DATETIME
 
 
 @dataclass
@@ -21,9 +24,22 @@ class Account:
 
 
 class AccountGenerator:
-    def __init__(self):
+    def __init__(
+        self,
+        reference_datetime=DEFAULT_REFERENCE_DATETIME
+        ):
+        if not isinstance(reference_datetime, datetime):
+            raise TypeError(
+                "reference_datetime must be a datetime"
+                )
+        if reference_datetime.tzinfo is not None:
+            raise ValueError(
+                "reference_datetime must not include a timezone"
+                )
+
         self.fake = Faker("en_GB")
         self.account_counter = 1
+        self.reference_datetime = reference_datetime
 
     def generate_account(self, customer_id):
         account_id = f"ACC{self.account_counter:06d}"
@@ -45,9 +61,12 @@ class AccountGenerator:
             "Closed"
             ])
         currency = "GBP"
-        opened_date = self.fake.date_between(
-            start_date="-15y",
-            end_date="today"
+        reference_date = self.reference_datetime.date()
+        opened_date = self.fake.date_between_dates(
+            date_start=(
+                reference_date - relativedelta(years=15)
+                ),
+            date_end=reference_date
             )
 
         if account_type == "Current":

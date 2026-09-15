@@ -1,12 +1,14 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 
+from dateutil.relativedelta import relativedelta
 from faker import Faker
 import random
 
 from src.config.occupations import OCCUPATION_INCOME_RANGES
 from src.config.cities import UK_CITY_POSTCODES
 from src.config.risk_profiles import RISK_SEGMENTS
+from src.data_generation import DEFAULT_REFERENCE_DATETIME
 
 @dataclass
 class Customer:
@@ -27,9 +29,22 @@ class Customer:
 
 
 class CustomerGenerator:
-    def __init__(self):
+    def __init__(
+        self,
+        reference_datetime=DEFAULT_REFERENCE_DATETIME
+        ):
+        if not isinstance(reference_datetime, datetime):
+            raise TypeError(
+                "reference_datetime must be a datetime"
+                )
+        if reference_datetime.tzinfo is not None:
+            raise ValueError(
+                "reference_datetime must not include a timezone"
+                )
+
         self.fake= Faker("en_GB")
         self.customer_counter= 1
+        self.reference_datetime = reference_datetime
 
     def generate_customer(self):
         customer_id = f"CUST{self.customer_counter:06d}"
@@ -40,12 +55,16 @@ class CustomerGenerator:
             first_name=self.fake.first_name_female()
 
         last_name= self.fake.last_name()
-        today= date.today()
+        today= self.reference_datetime.date()
 
-        date_of_birth= self.fake.date_of_birth(
-            minimum_age=18,
-            maximum_age=80
-        )
+        date_of_birth= self.fake.date_between_dates(
+            date_start=(
+                today
+                - relativedelta(years=81)
+                + timedelta(days=1)
+                ),
+            date_end=today - relativedelta(years=18)
+            )
         
         age = (
             today.year
@@ -55,9 +74,9 @@ class CustomerGenerator:
                     < (date_of_birth.month, date_of_birth.day)
                       )
                       )
-        customer_since = self.fake.date_between(
-            start_date="-15y",
-            end_date="today"
+        customer_since = self.fake.date_between_dates(
+            date_start=today - relativedelta(years=15),
+            date_end=today
             )
 
         occupation = random.choice(

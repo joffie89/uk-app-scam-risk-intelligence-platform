@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from faker import Faker
 import random
+
+from src.data_generation import DEFAULT_REFERENCE_DATETIME
 
 
 @dataclass
@@ -17,9 +20,22 @@ class Device:
 
 
 class DeviceGenerator:
-    def __init__(self):
+    def __init__(
+        self,
+        reference_datetime=DEFAULT_REFERENCE_DATETIME
+        ):
+        if not isinstance(reference_datetime, datetime):
+            raise TypeError(
+                "reference_datetime must be a datetime"
+                )
+        if reference_datetime.tzinfo is not None:
+            raise ValueError(
+                "reference_datetime must not include a timezone"
+                )
+
         self.fake = Faker("en_GB")
         self.device_counter = 1
+        self.reference_datetime = reference_datetime
 
     def generate_device(self):
         device_id = f"DEV{self.device_counter:06d}"
@@ -49,9 +65,11 @@ class DeviceGenerator:
         browser = random.choice(browsers[operating_system])
         trusted_device = random.choice([True, False])
         device_fingerprint = self.fake.sha256()
-        last_seen = self.fake.date_time_between(
-            start_date="-1y",
-            end_date="now"
+        last_seen = self.fake.date_time_between_dates(
+            datetime_start=(
+                self.reference_datetime - relativedelta(years=1)
+                ),
+            datetime_end=self.reference_datetime
             )
 
         device = Device(
