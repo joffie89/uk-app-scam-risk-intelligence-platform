@@ -3,7 +3,6 @@ from dataclasses import asdict
 from faker import Faker
 import pandas as pd
 import random
-import streamlit as st
 
 from src.data_generation import DEFAULT_REFERENCE_DATETIME
 from src.data_generation.account_generator import AccountGenerator
@@ -221,9 +220,6 @@ def _generate_transactions(
     return transactions
 
 
-@st.cache_resource(
-    show_spinner="Generating data, training XGBoost, and calculating SHAP..."
-    )
 def _build_dashboard_state():
     random.seed(RANDOM_SEED)
     Faker.seed(RANDOM_SEED)
@@ -322,6 +318,8 @@ def _build_dashboard_state():
 
 
 def _render_overview(state):
+    import streamlit as st
+
     st.title("UK APP Scam & Money Mule Risk Intelligence")
     st.caption(
         "Synthetic banking activity with chronological held-out "
@@ -406,6 +404,8 @@ def _render_overview(state):
 
 
 def _render_alerts(state):
+    import streamlit as st
+
     st.title("Alerts List")
     st.caption(
         "Model-generated alerts from the chronological held-out set."
@@ -476,6 +476,8 @@ def _render_alerts(state):
 
 
 def _render_transaction_detail(state):
+    import streamlit as st
+
     st.title("Transaction Detail")
     st.caption(
         "Case review and local SHAP explanation for a held-out transaction."
@@ -614,12 +616,19 @@ def _render_transaction_detail(state):
 
 
 def main():
+    import streamlit as st
+
     st.set_page_config(
         page_title="UK APP Scam Risk Intelligence",
         page_icon="🔎",
         layout="wide"
         )
-    state = _build_dashboard_state()
+    cached_build_dashboard_state = st.cache_resource(
+        show_spinner=(
+            "Generating data, training XGBoost, and calculating SHAP..."
+            )
+        )(_build_dashboard_state)
+    state = cached_build_dashboard_state()
 
     with st.sidebar:
         st.header("Risk Intelligence")
