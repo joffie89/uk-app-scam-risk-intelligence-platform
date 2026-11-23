@@ -127,8 +127,13 @@ def build_audit_results():
         "dataset": {
             "total_transactions": int(len(transactions)),
             "fraud_count": int(labels.sum()),
+            "fraud_rate": float(labels.mean()),
+            "train_transaction_count": int(len(train_labels)),
             "train_fraud_count": int(train_labels.sum()),
+            "train_fraud_rate": float(train_labels.mean()),
+            "test_transaction_count": int(len(test_labels)),
             "test_fraud_count": int(test_labels.sum()),
+            "test_fraud_rate": float(test_labels.mean()),
             "test_fraud_count_by_type": fraud_count_by_type
             },
         "single_feature_roc_auc": single_feature_roc_auc,
@@ -147,8 +152,25 @@ def _print_results(results):
     print("Dataset")
     print(f"  Total transactions: {dataset['total_transactions']}")
     print(f"  Fraud count: {dataset['fraud_count']}")
+    print(f"  Fraud rate: {dataset['fraud_rate']:.6%}")
+    print(
+        "  Transactions in train: "
+        f"{dataset['train_transaction_count']}"
+        )
     print(f"  Fraud count in train: {dataset['train_fraud_count']}")
+    print(
+        "  Fraud rate in train: "
+        f"{dataset['train_fraud_rate']:.6%}"
+        )
+    print(
+        "  Transactions in test: "
+        f"{dataset['test_transaction_count']}"
+        )
     print(f"  Fraud count in test: {dataset['test_fraud_count']}")
+    print(
+        "  Fraud rate in test: "
+        f"{dataset['test_fraud_rate']:.6%}"
+        )
     print("  Fraud count by fraud_type in test:")
     for fraud_type, count in dataset[
         "test_fraud_count_by_type"
