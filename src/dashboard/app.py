@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from datetime import datetime, timedelta
 
 from faker import Faker
 import pandas as pd
@@ -22,13 +23,14 @@ from src.models.risk_model import RiskModel
 
 RANDOM_SEED = 20260914
 REFERENCE_DATETIME = DEFAULT_REFERENCE_DATETIME
-CUSTOMER_COUNT = 500
+CUSTOMER_COUNT = 1500
 ACCOUNTS_PER_CUSTOMER = 2
 DEVICES_PER_CUSTOMER = 2
 BENEFICIARIES_PER_CUSTOMER = 6
-TRANSACTIONS_PER_ACCOUNT = 10
-SCENARIOS_PER_TYPE = 8
+TRANSACTIONS_PER_ACCOUNT = 40
+SCENARIOS_PER_TYPE = 60
 BENIGN_SHARED_DEVICE_PAIRS = 20
+GENUINE_BURST_ACCOUNT_RATE = 0.10
 
 PAGE_NAMES = (
     "Overview",
@@ -132,6 +134,12 @@ def _generate_transactions(
     transaction_generator = TransactionGenerator(reference_datetime)
     fraud_generator = FraudGenerator()
     transactions = []
+    mule_scenario_positions = {
+        customer_index: position
+        for position, customer_index in enumerate(
+            sorted(mule_customer_indices)
+            )
+        }
 
     for customer_index, customer in enumerate(entities["customers"]):
         accounts = entities["accounts_by_customer"][
@@ -152,24 +160,62 @@ def _generate_transactions(
                 account_index == 0
                 and customer_index in investment_customer_indices
                 ):
+                investment_payment_count = random.randint(3, 6)
+                maximum_scenario_duration = timedelta(
+                    days=7 * (investment_payment_count - 1)
+                    )
+                investment_beneficiary_candidates = [
+                    beneficiary
+                    for beneficiary in beneficiaries
+                    if (
+                        reference_datetime
+                        - datetime.combine(
+                            beneficiary.added_date,
+                            datetime.min.time()
+                            )
+                        >= maximum_scenario_duration
+                        )
+                    ]
+                investment_beneficiary = random.choice(
+                    investment_beneficiary_candidates
+                    or beneficiaries
+                    )
+                scenario_timestamp_bounds = (
+                    _scenario_timestamp_bounds(
+                        customer,
+                        account,
+                        [investment_beneficiary],
+                        reference_datetime
+                        )
+                    )
                 while True:
                     baseline_transactions = [
                         transaction_generator.generate_transaction(
                             customer,
                             account,
                             device,
-                            beneficiaries[0]
+                            investment_beneficiary
                             )
-                        for _ in range(2)
+                        for _ in range(investment_payment_count)
                         ]
                     try:
                         injected_transactions = (
                             fraud_generator.inject_investment_scam(
-                                baseline_transactions
+                                baseline_transactions,
+                                earliest_timestamp=(
+                                    scenario_timestamp_bounds[0]
+                                    ),
+                                latest_timestamp=(
+                                    scenario_timestamp_bounds[1]
+                                    )
                                 )
                             )
                     except ValueError as error:
-                        if "timestamp" not in str(error).lower():
+                        error_message = str(error).lower()
+                        if (
+                            "range is too short" in error_message
+                            or "timestamp" not in error_message
+                            ):
                             raise
                     else:
                         transactions.extend(injected_transactions)
@@ -183,6 +229,24 @@ def _generate_transactions(
                 device = entities[
                     "mule_device_by_customer_index"
                     ][customer_index]
+                if mule_scenario_positions[customer_index] % 2:
+                    mule_beneficiaries = random.sample(
+                        beneficiaries,
+                        4
+                        )
+                else:
+                    mule_beneficiaries = sorted(
+                        beneficiaries,
+                        key=lambda beneficiary: beneficiary.added_date
+                        )[:4]
+                scenario_timestamp_bounds = (
+                    _scenario_timestamp_bounds(
+                        customer,
+                        account,
+                        mule_beneficiaries,
+                        reference_datetime
+                        )
+                    )
                 while True:
                     baseline_transactions = [
                         transaction_generator.generate_transaction(
@@ -191,21 +255,54 @@ def _generate_transactions(
                             device,
                             beneficiary
                             )
-                        for beneficiary in beneficiaries[:4]
+                        for beneficiary in mule_beneficiaries
                         ]
                     try:
                         injected_transactions = (
                             fraud_generator.inject_money_mule_layering(
-                                baseline_transactions
+                                baseline_transactions,
+                                earliest_timestamp=(
+                                    scenario_timestamp_bounds[0]
+                                    ),
+                                latest_timestamp=(
+                                    scenario_timestamp_bounds[1]
+                                    )
                                 )
                             )
                     except ValueError as error:
-                        if "timestamp" not in str(error).lower():
+                        error_message = str(error).lower()
+                        if (
+                            "range is too short" in error_message
+                            or "timestamp" not in error_message
+                            ):
                             raise
                     else:
                         transactions.extend(injected_transactions)
                         break
                 normal_transaction_count -= len(injected_transactions)
+
+            if (
+                normal_transaction_count >= 2
+                and random.random() < GENUINE_BURST_ACCOUNT_RATE
+                ):
+                burst_transaction_count = random.randint(
+                    2,
+                    min(5, normal_transaction_count)
+                    )
+                burst_beneficiary = min(
+                    beneficiaries,
+                    key=lambda beneficiary: beneficiary.added_date
+                    )
+                transactions.extend(
+                    transaction_generator.generate_transaction_burst(
+                        customer,
+                        account,
+                        device,
+                        burst_beneficiary,
+                        burst_transaction_count
+                        )
+                    )
+                normal_transaction_count -= burst_transaction_count
 
             for _ in range(normal_transaction_count):
                 transactions.append(
@@ -218,6 +315,28 @@ def _generate_transactions(
                     )
 
     return transactions
+
+
+def _scenario_timestamp_bounds(
+    customer,
+    account,
+    beneficiaries,
+    reference_datetime
+    ):
+    earliest_date = max(
+        customer.customer_since,
+        account.opened_date,
+        *(beneficiary.added_date for beneficiary in beneficiaries)
+        )
+    earliest_timestamp = datetime.combine(
+        earliest_date,
+        datetime.min.time()
+        )
+    earliest_timestamp = max(
+        earliest_timestamp,
+        reference_datetime - timedelta(days=365)
+        )
+    return earliest_timestamp, reference_datetime
 
 
 def _build_dashboard_state():

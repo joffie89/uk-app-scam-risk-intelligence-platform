@@ -1,11 +1,62 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import math
 
 from faker import Faker
 import random
 
 from src.config.cities import UK_CITY_COORDINATES
 from src.data_generation import DEFAULT_REFERENCE_DATETIME
+
+
+_AMOUNT_DISTRIBUTIONS = {
+    # minimum, median, maximum, lognormal sigma
+    "Groceries": (2, 35, 350, 0.65),
+    "Retail": (5, 60, 2_000, 1.00),
+    "Utilities": (10, 90, 600, 0.55),
+    "Transport": (2, 15, 400, 0.85),
+    "Food & Dining": (4, 25, 300, 0.65),
+    "Entertainment": (3, 15, 250, 0.60),
+    "Travel": (20, 180, 3_000, 1.00),
+    "Telecoms": (5, 35, 250, 0.55),
+    "Personal Transfer": (5, 100, 1_900, 1.05),
+    "Other Transfer": (5, 80, 1_900, 1.10)
+    }
+_LARGE_GENUINE_TRANSFER_CATEGORIES = {
+    "Personal Transfer",
+    "Other Transfer"
+    }
+_LARGE_GENUINE_TRANSFER_RATE = 0.03
+_LARGE_GENUINE_TRANSFER_DISTRIBUTION = (
+    2_000,
+    5_500,
+    15_000,
+    0.55
+    )
+
+
+def _generate_amount(merchant_category):
+    amount_distribution = _AMOUNT_DISTRIBUTIONS[merchant_category]
+    if (
+        merchant_category in _LARGE_GENUINE_TRANSFER_CATEGORIES
+        and random.random() < _LARGE_GENUINE_TRANSFER_RATE
+        ):
+        amount_distribution = (
+            _LARGE_GENUINE_TRANSFER_DISTRIBUTION
+            )
+
+    (
+        minimum_amount,
+        median_amount,
+        maximum_amount,
+        sigma
+        ) = amount_distribution
+    amount = random.lognormvariate(
+        math.log(median_amount),
+        sigma
+        )
+    amount = min(max(amount, minimum_amount), maximum_amount)
+    return round(amount, 2)
 
 
 @dataclass
@@ -54,7 +105,8 @@ class TransactionGenerator:
         customer,
         account,
         device,
-        beneficiary
+        beneficiary,
+        timestamp=None
         ):
         if account.customer_id != customer.customer_id:
             raise ValueError(
@@ -102,49 +154,27 @@ class TransactionGenerator:
             merchant_category = "Other Transfer"
             merchant = "Other Payee"
 
-        amount_ranges = {
-            "Groceries": (5, 200),
-            "Retail": (10, 800),
-            "Utilities": (20, 350),
-            "Transport": (2, 250),
-            "Food & Dining": (5, 150),
-            "Entertainment": (5, 120),
-            "Travel": (50, 1_500),
-            "Telecoms": (10, 150),
-            "Personal Transfer": (10, 2_000),
-            "Other Transfer": (10, 1_000)
-            }
-        minimum_amount, maximum_amount = amount_ranges[
-            merchant_category
-            ]
-        amount = round(
-            random.uniform(minimum_amount, maximum_amount),
-            2
-            )
+        amount = _generate_amount(merchant_category)
 
-        now = self.reference_datetime
-        earliest_date = max(
-            customer.customer_since,
-            account.opened_date,
-            beneficiary.added_date
+        start_timestamp, end_timestamp = self._timestamp_bounds(
+            customer,
+            account,
+            beneficiary
             )
-        earliest_timestamp = datetime.combine(
-            earliest_date,
-            datetime.min.time()
-            )
-        recent_timestamp = now - timedelta(days=365)
-        start_timestamp = max(
-            earliest_timestamp,
-            recent_timestamp
-            )
-        if start_timestamp > now:
-            raise ValueError(
-                "Linked entities must not have future relationship dates"
+        if timestamp is None:
+            timestamp = self.fake.date_time_between(
+                start_date=start_timestamp,
+                end_date=end_timestamp
                 )
-        timestamp = self.fake.date_time_between(
-            start_date=start_timestamp,
-            end_date=now
-            )
+        else:
+            if not isinstance(timestamp, datetime):
+                raise TypeError("timestamp must be a datetime")
+            if timestamp.tzinfo is not None:
+                raise ValueError("timestamp must not include a timezone")
+            if not start_timestamp <= timestamp <= end_timestamp:
+                raise ValueError(
+                    "timestamp must be within the valid transaction window"
+                    )
 
         if random.random() < 0.85:
             location = customer.city
@@ -189,3 +219,82 @@ class TransactionGenerator:
         device.last_seen = max(device.last_seen, timestamp)
         self.transaction_counter += 1
         return transaction
+
+    def generate_transaction_burst(
+        self,
+        customer,
+        account,
+        device,
+        beneficiary,
+        transaction_count
+        ):
+        """Generate two to five genuine payments within three hours."""
+        if (
+            isinstance(transaction_count, bool)
+            or not isinstance(transaction_count, int)
+            or not 2 <= transaction_count <= 5
+            ):
+            raise ValueError(
+                "transaction_count must be an integer from two to five"
+                )
+
+        start_timestamp, end_timestamp = self._timestamp_bounds(
+            customer,
+            account,
+            beneficiary
+            )
+        gaps = [
+            timedelta(minutes=random.randint(5, 45))
+            for _ in range(transaction_count - 1)
+            ]
+        burst_duration = sum(gaps, timedelta())
+        latest_start_timestamp = end_timestamp - burst_duration
+        if start_timestamp > latest_start_timestamp:
+            raise ValueError(
+                "Linked entities do not have enough history for a burst"
+                )
+        burst_start_timestamp = self.fake.date_time_between(
+            start_date=start_timestamp,
+            end_date=latest_start_timestamp
+            )
+        burst_timestamps = [burst_start_timestamp]
+        for gap in gaps:
+            burst_timestamps.append(burst_timestamps[-1] + gap)
+
+        return [
+            self.generate_transaction(
+                customer,
+                account,
+                device,
+                beneficiary,
+                timestamp=burst_timestamp
+                )
+            for burst_timestamp in burst_timestamps
+            ]
+
+    def _timestamp_bounds(
+        self,
+        customer,
+        account,
+        beneficiary
+        ):
+        now = self.reference_datetime
+        earliest_date = max(
+            customer.customer_since,
+            account.opened_date,
+            beneficiary.added_date
+            )
+        earliest_timestamp = datetime.combine(
+            earliest_date,
+            datetime.min.time()
+            )
+        recent_timestamp = now - timedelta(days=365)
+        start_timestamp = max(
+            earliest_timestamp,
+            recent_timestamp
+            )
+        if start_timestamp > now:
+            raise ValueError(
+                "Linked entities must not have future relationship dates"
+                )
+        return start_timestamp, now
