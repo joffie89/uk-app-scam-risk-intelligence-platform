@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "test_transaction_count": 24000,
+    "total_test_frauds": 102,
+    "rule": "transaction_amount >= 2000",
+    "rule_mode": "shadow",
+    "model_alert_rates_percent": [
+      0.5,
+      1.0,
+      2.0,
+      5.0
+    ]
+  },
+  "results": [
+    {
+      "k_percent": 0.5,
+      "model_alert_count": 120,
+      "rule_flag_count": 596,
+      "fraud_outcomes": {
+        "total_frauds_in_test": 102,
+        "frauds_caught_by_both": 30,
+        "frauds_caught_only_by_rule": 3,
+        "frauds_caught_only_by_model": 36,
+        "frauds_caught_by_neither": 33
+      },
+      "by_fraud_type": {
+        "investment_scam": {
+          "total_frauds_in_test": 54,
+          "frauds_caught_by_both": 19,
+          "frauds_caught_only_by_rule": 3,
+          "frauds_caught_only_by_model": 7,
+          "frauds_caught_by_neither": 25
+        },
+        "money_mule_layering": {
+          "total_frauds_in_test": 48,
+          "frauds_caught_by_both": 11,
+          "frauds_caught_only_by_rule": 0,
+          "frauds_caught_only_by_model": 29,
+          "frauds_caught_by_neither": 8
+        }
+      },
+      "rule_reactivation": {
+        "extra_alert_count": 541,
+        "extra_fraud_count": 3,
+        "extra_alert_precision": 0.005545286506469501
+      }
+    },
+    {
+      "k_percent": 1.0,
+      "model_alert_count": 240,
+      "rule_flag_count": 596,
+      "fraud_outcomes": {
+        "total_frauds_in_test": 102,
+        "frauds_caught_by_both": 30,
+        "frauds_caught_only_by_rule": 3,
+        "frauds_caught_only_by_model": 46,
+        "frauds_caught_by_neither": 23
+      },
+      "by_fraud_type": {
+        "investment_scam": {
+          "total_frauds_in_test": 54,
+          "frauds_caught_by_both": 19,
+          "frauds_caught_only_by_rule": 3,
+          "frauds_caught_only_by_model": 13,
+          "frauds_caught_by_neither": 19
+        },
+        "money_mule_layering": {
+          "total_frauds_in_test": 48,
+          "frauds_caught_by_both": 11,
+          "frauds_caught_only_by_rule": 0,
+          "frauds_caught_only_by_model": 33,
+          "frauds_caught_by_neither": 4
+        }
+      },
+      "rule_reactivation": {
+        "extra_alert_count": 506,
+        "extra_fraud_count": 3,
+        "extra_alert_precision": 0.005928853754940711
+      }
+    },
+    {
+      "k_percent": 2.0,
+      "model_alert_count": 480,
+      "rule_flag_count": 596,
+      "fraud_outcomes": {
+        "total_frauds_in_test": 102,
+        "frauds_caught_by_both": 30,
+        "frauds_caught_only_by_rule": 3,
+        "frauds_caught_only_by_model": 52,
+        "frauds_caught_by_neither": 17
+      },
+      "by_fraud_type": {
+        "investment_scam": {
+          "total_frauds_in_test": 54,
+          "frauds_caught_by_both": 19,
+          "frauds_caught_only_by_rule": 3,
+          "frauds_caught_only_by_model": 17,
+          "frauds_caught_by_neither": 15
+        },
+        "money_mule_layering": {
+          "total_frauds_in_test": 48,
+          "frauds_caught_by_both": 11,
+          "frauds_caught_only_by_rule": 0,
+          "frauds_caught_only_by_model": 35,
+          "frauds_caught_by_neither": 2
+        }
+      },
+      "rule_reactivation": {
+        "extra_alert_count": 471,
+        "extra_fraud_count": 3,
+        "extra_alert_precision": 0.006369426751592357
+      }
+    },
+    {
+      "k_percent": 5.0,
+      "model_alert_count": 1200,
+      "rule_flag_count": 596,
+      "fraud_outcomes": {
+        "total_frauds_in_test": 102,
+        "frauds_caught_by_both": 32,
+        "frauds_caught_only_by_rule": 1,
+        "frauds_caught_only_by_model": 59,
+        "frauds_caught_by_neither": 10
+      },
+      "by_fraud_type": {
+        "investment_scam": {
+          "total_frauds_in_test": 54,
+          "frauds_caught_by_both": 21,
+          "frauds_caught_only_by_rule": 1,
+          "frauds_caught_only_by_model": 23,
+          "frauds_caught_by_neither": 9
+        },
+        "money_mule_layering": {
+          "total_frauds_in_test": 48,
+          "frauds_caught_by_both": 11,
+          "frauds_caught_only_by_rule": 0,
+          "frauds_caught_only_by_model": 36,
+          "frauds_caught_by_neither": 1
+        }
+      },
+      "rule_reactivation": {
+        "extra_alert_count": 434,
+        "extra_fraud_count": 1,
+        "extra_alert_precision": 0.002304147465437788
+      }
+    }
+  ],
+  "run": {
+    "evaluation_cache": "loaded",
+    "runtime_seconds": 0.36002660007216036
+  }
+}
