@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.dashboard.app import _build_dashboard_state
+from evaluation.evaluation_cache import load_or_build_evaluation_data
 from src.feature_engineering.feature_engineer import FEATURE_COLUMNS
 
 
@@ -81,26 +81,24 @@ def _ranking_metrics(actual_labels, scores):
     return metrics
 
 
-def build_audit_results():
-    state = _build_dashboard_state()
-    transactions = state["transactions"]
-    features = state["features"]
-    risk_model = state["risk_model"]
-
-    labels = transactions["is_fraud"].astype("int64")
-    train_ids = list(risk_model.train_transaction_ids)
-    test_ids = list(risk_model.test_transaction_ids)
+def build_audit_results(evaluation_data=None):
+    if evaluation_data is None:
+        evaluation_data, _ = load_or_build_evaluation_data()
+    features = evaluation_data["features"]
+    labels = evaluation_data["labels"]
+    fraud_types = evaluation_data["fraud_types"]
+    train_ids = list(evaluation_data["train_transaction_ids"])
+    test_ids = list(evaluation_data["test_transaction_ids"])
     train_labels = labels.loc[train_ids]
     test_labels = labels.loc[test_ids]
 
-    test_fraud_transactions = transactions.loc[
-        test_ids
-        ].loc[lambda frame: frame["is_fraud"]]
+    test_fraud_types = fraud_types.loc[test_ids].loc[
+        test_labels == 1
+        ]
     fraud_count_by_type = {
         str(fraud_type): int(count)
-        for fraud_type, count in test_fraud_transactions[
-            "fraud_type"
-            ].value_counts().sort_index().items()
+        for fraud_type, count in test_fraud_types.value_counts(
+            ).sort_index().items()
         }
 
     single_feature_roc_auc = {
@@ -120,12 +118,12 @@ def build_audit_results():
         baseline_predictions
         )
 
-    model_scores = risk_model.evaluation_results[
-        "risk_score"
-        ].reindex(test_ids)
+    model_scores = evaluation_data["test_risk_scores"].reindex(
+        test_ids
+        )
     return {
         "dataset": {
-            "total_transactions": int(len(transactions)),
+            "total_transactions": int(len(features)),
             "fraud_count": int(labels.sum()),
             "fraud_rate": float(labels.mean()),
             "train_transaction_count": int(len(train_labels)),
@@ -208,12 +206,14 @@ def _print_results(results):
 
 
 def main():
-    results = build_audit_results()
+    evaluation_data, cache_status = load_or_build_evaluation_data()
+    results = build_audit_results(evaluation_data)
     RESULTS_PATH.write_text(
         json.dumps(results, indent=2) + "\n",
         encoding="utf-8"
         )
     _print_results(results)
+    print(f"\nEvaluation cache: {cache_status}")
     print(f"\nSaved results to {RESULTS_PATH.relative_to(PROJECT_ROOT)}")
 
 

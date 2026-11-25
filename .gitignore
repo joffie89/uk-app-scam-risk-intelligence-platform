@@ -5,6 +5,9 @@
 __pycache__/
 *.py[cod]
 
+# Generated evaluation cache
+evaluation/cache/
+
 # VS Code
 .vscode/
 
