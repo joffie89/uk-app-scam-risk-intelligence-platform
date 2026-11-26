@@ -1,0 +1,235 @@
+{
+  "question": "Is keeping the £2,000 rule worth it?",
+  "method": {
+    "model_alert_rate_percent": 1.0,
+    "model_alert_count": 240,
+    "rule": "transaction_amount >= 2000",
+    "scenario_grouping": "Use a scenario identifier if present; otherwise account_id + fraud_type.",
+    "prevented_loss_low": "Sum of the rule-only caught payments.",
+    "prevented_loss_high": "L_low plus unique later scenario payments not already included in L_low.",
+    "payoff_test": "prevented loss >= total cost"
+  },
+  "rule_only_payments": [
+    {
+      "transaction_id": "TXN080001",
+      "timestamp": "2026-08-23 22:19:53",
+      "amount_gbp": 2535.52,
+      "model_risk_score": 0.39796268939971924,
+      "fraud_type": "investment_scam",
+      "scenario_identifier": {
+        "source": "fallback_account_id_and_fraud_type",
+        "account_id": "ACC007888",
+        "fraud_type": "investment_scam"
+      },
+      "scenario_label": "ACC007888 + investment_scam",
+      "scam_payment_count": 4,
+      "full_scam_value_gbp": 15993.49,
+      "later_payment_count": 2,
+      "later_payment_value_gbp": 13318.27,
+      "later_payment_transaction_ids": [
+        "TXN080003",
+        "TXN080004"
+      ]
+    },
+    {
+      "transaction_id": "TXN080003",
+      "timestamp": "2026-08-25 10:29:08",
+      "amount_gbp": 5413.85,
+      "model_risk_score": 0.7163456678390503,
+      "fraud_type": "investment_scam",
+      "scenario_identifier": {
+        "source": "fallback_account_id_and_fraud_type",
+        "account_id": "ACC007888",
+        "fraud_type": "investment_scam"
+      },
+      "scenario_label": "ACC007888 + investment_scam",
+      "scam_payment_count": 4,
+      "full_scam_value_gbp": 15993.49,
+      "later_payment_count": 1,
+      "later_payment_value_gbp": 7904.42,
+      "later_payment_transaction_ids": [
+        "TXN080004"
+      ]
+    },
+    {
+      "transaction_id": "TXN080004",
+      "timestamp": "2026-08-28 20:35:37",
+      "amount_gbp": 7904.42,
+      "model_risk_score": 0.7113550901412964,
+      "fraud_type": "investment_scam",
+      "scenario_identifier": {
+        "source": "fallback_account_id_and_fraud_type",
+        "account_id": "ACC007888",
+        "fraud_type": "investment_scam"
+      },
+      "scenario_label": "ACC007888 + investment_scam",
+      "scam_payment_count": 4,
+      "full_scam_value_gbp": 15993.49,
+      "later_payment_count": 0,
+      "later_payment_value_gbp": 0.0,
+      "later_payment_transaction_ids": []
+    }
+  ],
+  "prevented_loss": {
+    "l_low_gbp": 15853.79,
+    "raw_sum_of_per_payment_later_values_gbp": 21222.69,
+    "unique_later_payment_transaction_ids": [
+      "TXN080003",
+      "TXN080004"
+    ],
+    "unique_later_payment_value_gbp": 13318.27,
+    "incremental_later_payment_transaction_ids": [],
+    "incremental_later_payment_value_gbp": 0.0,
+    "l_high_gbp": 15853.79,
+    "deduplication_note": "All three caught payments are in one scam. Later payments are deduplicated, and caught payments already counted in L_low are not added again."
+  },
+  "cost_assumptions": {
+    "illustrative_not_real_figures": true,
+    "extra_alert_count": 506,
+    "genuine_extra_alert_count": 503,
+    "rule_only_fraud_count": 3,
+    "formula": "506 * review cost per alert + 503 * churn cost per genuine alert",
+    "review_costs_per_alert_gbp": [
+      2,
+      5,
+      10,
+      20
+    ],
+    "churn_costs_per_genuine_alert_gbp": [
+      0,
+      1,
+      5,
+      10
+    ]
+  },
+  "cost_table": [
+    {
+      "review_cost_per_alert_gbp": 2,
+      "cells": [
+        {
+          "churn_cost_per_genuine_alert_gbp": 0,
+          "total_cost_gbp": 1012,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 1,
+          "total_cost_gbp": 1515,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 5,
+          "total_cost_gbp": 3527,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 10,
+          "total_cost_gbp": 6042,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        }
+      ]
+    },
+    {
+      "review_cost_per_alert_gbp": 5,
+      "cells": [
+        {
+          "churn_cost_per_genuine_alert_gbp": 0,
+          "total_cost_gbp": 2530,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 1,
+          "total_cost_gbp": 3033,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 5,
+          "total_cost_gbp": 5045,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 10,
+          "total_cost_gbp": 7560,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        }
+      ]
+    },
+    {
+      "review_cost_per_alert_gbp": 10,
+      "cells": [
+        {
+          "churn_cost_per_genuine_alert_gbp": 0,
+          "total_cost_gbp": 5060,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 1,
+          "total_cost_gbp": 5563,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 5,
+          "total_cost_gbp": 7575,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 10,
+          "total_cost_gbp": 10090,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        }
+      ]
+    },
+    {
+      "review_cost_per_alert_gbp": 20,
+      "cells": [
+        {
+          "churn_cost_per_genuine_alert_gbp": 0,
+          "total_cost_gbp": 10120,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 1,
+          "total_cost_gbp": 10623,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 5,
+          "total_cost_gbp": 12635,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        },
+        {
+          "churn_cost_per_genuine_alert_gbp": 10,
+          "total_cost_gbp": 15150,
+          "pays_off_under_l_low": true,
+          "pays_off_under_l_high": true
+        }
+      ]
+    }
+  ],
+  "conclusion": "Keeping the rule pays off in 16/16 illustrative cells under L_low and 16/16 under L_high. At the highest assumed cost, the margin is £703.79; the result is driven by one synthetic investment-scam scenario.",
+  "limitations": [
+    "Synthetic data",
+    "Illustrative costs, not real figures",
+    "Deterrence is not measured",
+    "Reimbursement is not modelled"
+  ],
+  "run": {
+    "evaluation_cache": "loaded",
+    "transaction_metadata_cache": "loaded",
+    "runtime_seconds": 2.030635700095445
+  }
+}
